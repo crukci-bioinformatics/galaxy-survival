@@ -1,0 +1,131 @@
+<tool id="rp_taylor" name="RP-Taylor2010">
+    <description>Recursive partitioning on prostate cancer dataset</description>
+
+    <command interpreter="R --vanilla --slave -f">rp_taylor.R --args ${GALAXY_DATA_INDEX_DIR}/cri/survival_analysis/TaylorNew.Rdata $input $col $output_txt $output_html $output_html.files_path $margins $groups $gleason $tstage 2&gt;stderr || cat stderr 1&gt;&amp;2</command>
+
+    <inputs>
+        <param name="input" type="data" format="tabular" label="Source file" help="File containing a list of gene symbols, must be tabular format"/>
+        <param name="col" type="data_column" data_ref="input" numerical="False" label="Column" help="Column containing gene symbols" />
+        <param name="margins" type="select" label="Surgical margin status" help="Filter expression data on surgical margin status">
+            <option value="negative" selected="true">Negative</option>
+            <option value="positive">Positive</option>
+            <option value="all">All</option>
+        </param>
+        <param name="groups" type="select" label="Groups" help="Filter on group either Primary or Primary + metastatic (all)">
+            <option value="primary" selected="true">Primary</option>
+            <option value="all">All</option>
+            <option value="metastasis">Metastasis</option>
+        </param>
+        <param name="gleason" type="select" label="Gleason Grade" help="Filter on Gleason grade, 5-6 (low), 7-9 (high) or 5-9 (all)">
+            <option value="all" selected="true">All</option>
+            <option value="low">Low</option>
+            <option value="high">High</option>
+        </param>
+        <param name="tstage" type="select" label="Pathological T stage" help="Filter on pathological t-stage, T2, T3/T4 or all">
+            <option value="all" selected="true">All</option>
+            <option value="two">T2</option>
+            <option value="threefour">T3/T4</option>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data format="tabular" name="output_txt" />
+        <data format="html" name="output_html" />
+    </outputs>
+
+    <tests>
+        <test>
+            <param name="input" value="survival_genes.tabular" ftype="tabular" />
+            <param name="col" value="2"/>
+            <output name="output_txt" file="rp_taylor.tabular" />
+            <output name="output_html" file="rp_taylor.html" />
+        </test>
+    </tests>
+
+    <help>
+
+.. class:: infomark
+
+Performs recursive partitioning (Hothorn et al., J Comput Graph Stat 15:651-674, 2006) for each individual gene (probe) specified in the input file. Recursive partitioning attempts to find cut-off(s) in gene expression values such that the resulting subgroups have significantly different survival courses.  Using expression data and accompanying biochemical recurrence data taken from Taylor et al., Cancer Cell. 18:11-22, 2010.
+
+.. class:: infomark
+
+This prostate cancer dataset comprises expression profiles for 140 patients of which 131 are primary tumours and 9 are metastatic tumours. 107 have negative surgical margins and 33 positive surgical margins. Time to biochemical recurrence is available for all patients and there are 36 biochemical recurrences.
+
+-----
+
+**Warning**
+
+- The number of events in this data is rather small. Absence of evidence is not evidence of absence, so if a gene is not significant this maybe due to low power, rather than the gene not being important.
+- It is recommended to have three of the options set to all otherwise the number of observations is too small.
+
+-----
+
+**Syntax**
+
+This tool takes a list of gene symbols and matches each to an HGNC symbol to retrieve the expression data. Recursive partitioning is the carried out to find cut-off(s) in gene expression value such that the resulting groups have a significant difference in time to biochemical recurrence.  A recursive partitioning plot and a Kaplan-Meier plot are produced for genes with significant cut-off(s).
+
+- The input should be a single column list of gene names (HGNC gene symbols).
+- There is an option to choose the subpopulation by selecting Primary tumours (n=131), metastatic tumours (n=9), negative margins (n=107), positive margins (n=33), Gleason grade 4/5 (n=78), Gleason grade 7-9 (n=62), T2 (n=82) or T3/T4 (n=54). 
+- There are two output files: the first is an HTML file containing recursive partitioning and Kaplan-Meier survival curves for significant probes, the second a table summarising cut-offs and p-values for each gene/probe.
+- The column Accession gives the accession ID.
+- The cut-offs are cut-offs in gene expression values to define the groups, if there is one cut-off there are two groups and if there are two cut-offs there are three groups. 
+- The p-values are the significance of the differences in time to biochemical recurrence between the two groups. 
+- If a gene is not present in the expression data, then the Accession will say NA, for such genes you may wish to try alternative gene names.
+
+-----
+
+**Example**
+
+- Input gene list::
+
+	BIRC5
+	INHBB
+	PBK
+	ENTPD2
+	STK6
+
+- Surgical margin status:: 
+
+	All
+
+- Groups:: 
+
+	All
+
+- Gleason Grade:: 
+
+	All 
+
+- Pathological T Stage:: 
+
+	All 
+
+- Output::
+
+	GeneName	Accession	CutOff1	CutOff2	PValue1	PValue2	HighIsGood
+	BIRC5		NM_001012270	7.54	NA	0.00026	NA	FALSE
+	BIRC5		NM_001012271	7.4	NA	0.00011	NA	FALSE
+	BIRC5		NM_001168	7.4	NA	0.00011	NA	FALSE
+	INHBB		NM_002193	NA	NA	0.12	NA	NA
+	PBK		NM_018492	5.03	NA	3.2e-06	NA	FALSE
+	ENTPD2		NM_001246	8.12	NA	0.0062	NA	FALSE
+	ENTPD2		NM_203468	8.12	NA	0.0078	NA	FALSE
+	STK6		NA		NA	NA	NA	NA	NA
+
+
+In this example there was no evidence of a significant split for the probe for the INHBB gene. This is demonstrated by PValue1, the p-value for the first cut-off being &gt;0.05. The STK6 gene is not present in the expression data, at least under that name, this is demonstrated by the Accession number being NA. All other probes produced significant splits, as demonstrated by PValue1&lt;0.05. Recursive partitioning on the probes produced one cut-off to split the cohort into two groups, with significantly different time to biochemical recurrence. The sign of the cut-off indicates whether the value of the cut-off for the expression value is positive or negative. To see which group has worse prognosis, the Kaplan-Meier plots need to be studied or the HighIsGood column can be used. If this column is TRUE then high values of expression lead to good prognosis, if this is FALSE high values of expression lead to poor prognosis.     
+
+.. image:: ./static/images/cri/survival_analysis/BIRC5_rp_tay.png
+
+The plot above is a recursive partitioning plot for the first probe of the BIRC5 gene. The first node demonstrates that there is a significant split with p&lt;0.0001. Following the line to the second node, gives the Kaplan-Meier curve for the group with an BIRC5 expression value &lt;=7.543. There are 126 subjects in this group and a Kaplan-Meier plot is shown for this. Following the line to node 3, where BIRC5&gt;= 7.543, a Kaplan-Meier plot is shown for the 14 subjects in this group. 
+
+.. image:: ./static/images/cri/survival_analysis/BIRC5_km_tay.png
+
+The plot above combines the Kaplan-Meier curves from the recursive partitioning plot for easy visualisation. The red curve is the plot from node 3 and the blue curve the plot from node 2. 
+
+The Kaplan-Meier plot is a useful way of summarising survival data. There is one curve for each group. Each curve starts at 100% probability of survival. The probability of freedom from biochemical recurrence is shown on the y axis and the time (in years) is shown on the x axis. The curve drops each time there is an "event". A cross is shown on each curve where a "censoring" event takes place. This is where someone drops out of the study for a reason not related to the study, e.g. the study ends before an event has occurred. These subjects are no longer included in any calculations. The lower the survival curve the worse prognosis the patients in that group have.
+
+    </help>
+
+</tool>

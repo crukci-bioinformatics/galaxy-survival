@@ -1,0 +1,95 @@
+<tool id="data" name="Data">
+  <description>Returns clinical data and expression data</description>
+
+  <command interpreter="R --vanilla --slave -f">
+    #if $dataset.name == "loi":
+      data_loi.R --args ${GALAXY_DATA_INDEX_DIR}/cri/survival_analysis/LUMINAL.RData $input $col $output $dataset.outcome $dataset.receptor $dataset.treatment 2&gt;stderr || cat stderr 1&gt;&amp;2
+    #end if
+  </command>
+
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Source file" help="File containing a list of gene symbols, must be tabular format"/>
+    <param name="col" type="data_column" data_ref="input" numerical="False" label="Column" help="Column containing gene symbols" />
+    
+    <conditional name="dataset">
+      <param name="name" type="select" label="Dataset">
+        <option value="loi" selected="true">Loi Breast Cancer 2007</option>
+      </param>
+      
+      <when value="loi">
+        <param name="outcome" type="select" label="Outcome" help="Excludes patients missing seleced data type">
+          <option value="rfs" selected="true">Recurrence free survival</option>
+          <option value="dmfs">Distant metastasis free survival</option>
+          <option value="both">All</option>
+        </param>
+        <param name="receptor" type="select" label="ER/PgR receptor status" help="Filter expression data on estrogen receptor and/or progesterone receptor status">
+          <option value="all" selected="true">All</option>
+          <option value="er">ER-positive</option>
+          <option value="pgr">PgR-positive</option>
+          <option value="erpgr">ER- and PgR-positive</option>
+        </param>
+        <param name="treatment" type="select" label="Treatment" help="Filter expression data on treatment">
+          <option value="tamoxifen" selected="true">Tamoxifen</option>
+          <option value="none">None</option>
+        </param>
+      </when>
+    </conditional>
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output" />
+  </outputs>
+
+  <help>
+
+.. class:: infomark
+
+Returns the clinical data combined with the gene expression for each individual gene (probe) specified in the input file. Data are taken from Loi et al., J. Clin. Oncol. 25:1239-1246, 2007.
+
+.. class:: infomark
+
+This breast cancer dataset comprises expression profiles for primary tumours from 414 patients of which 277 were treated with Tamoxifen and 137 were untreated.
+
+- Recurrence free survival data are available for 268 and 125 of the treated and untreated patients respectively.
+- Distant metastasis free survival data are available for 250 and 125 of the treated and untreated patients respectively.
+
+- 263 of the treated group are ER-positive, 129 are PgR-positive and 124 are both ER- and PgR-positive.
+- 86 of the untreated group are ER-positive, 56 are PgR-positive and 51 are both ER- and PgR-positive.
+
+
+-----
+
+**Syntax**
+
+This tool takes a list of gene symbols and matches each to an Affymetrix Human Genome U133 Plus 2.0 probe ID (AffyID). This probe ID is then matched to the gene expression dataset to obtain gene expression values. The gene expression values are then appended to the clinical dataset to return a combined dataset. 
+
+- The input should be a single column list of gene symbols.
+- A choice is offered as to filter the data for missing recurrence free survival time or the distant metastasis free survival time or to return all data.
+- There is also the option to choose the subpopulation by selecting only ER-positive or PgR-positive tumours, or both ER- and PgR-positive. 
+- Another option allows the selection of patients treated with Tamoxifen or left untreated.
+- There is one output files: a text file containing the clinical data with subsequent columns of gene expression.
+- Gene expression columns are headed with the gene symbol and Affy probe ID.
+
+-----
+
+**Data**
+
+- samplename: the name of the patient sample
+- id: the id number of the sample
+- series: the series from which the patients came
+- age: patient age in completed years
+- grade: tumour grade, taking values 1, 2, 3 or NA (missing)
+- size: tumour size in cm
+- er: estrogen receptor status, 0=negative, 1=positive
+- pgr: progesteron receptor status, 0=negative, 1=positive, NA=missing
+- node: nodal status, 0=negative, 1=positive, NA=missing
+- t.rfs: time to recurrence, in days
+- e.rfs: recurrence event, 0=censored data, 1=recurrence or death
+- t.dmfs: time to distant metastasis, in days
+- e.dmfs: distant metastasis event, 0=censored data, 1=distant metastasis or death
+- additional columns of form GENESYMBOL - AFFY PROBE ID: gene expression values for the probe in the column heading
+
+  </help>
+
+</tool>
+

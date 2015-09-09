@@ -1,0 +1,91 @@
+<tool id="rp_glinsky" name="RP-Glinsky2004">
+  <description>Recursive partitioning on prostate cancer expression dataset</description>
+
+  <command interpreter="R --vanilla --slave -f">rp_glinsky.R --args ${GALAXY_DATA_INDEX_DIR}/cri/survival_analysis/GlnData.Rda $input $col $output_txt $output_html $output_html.files_path $pcutoff 2&gt;stderr || cat stderr 1&gt;&amp;2</command>
+
+  <inputs>
+    <param name="input" type="data" format="tabular,txt" label="Source file" help="File containing a list of gene symbols"/>
+    <param name="col" type="data_column" data_ref="input" numerical="False" label="Column" help="Column containing gene symbols (only available for tabular input file)" />
+    <param name="pcutoff" type="float" label="p-value cutoff" min="0" max="0.2" value="0.05" help="0.05 is generally used as the p-value cut-off for significance but changing this value produces cut-offs and plots for different significance values" />
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output_txt" />
+    <data format="html" name="output_html" />
+  </outputs>
+
+  <help>
+
+.. class:: infomark
+
+Performs recursive partitioning (Hothorn et al., J Comput Graph Stat 15:651-674, 2006) for each individual gene (probe) specified in the input file. Recursive partitioning attempts to find cut-off(s) in gene expression values such that the resulting subgroups have significantly different survival courses.  Using expression data and accompanying survival data taken from Glinsky et al., J. Clin. Ivest. 113:913-923, 2004.
+
+.. class:: infomark
+
+This prostate cancer dataset comprises expression profiles for primary tumours from 79 patients, with a median follow-up time of 70.0 months (range 10.6, 110.0 months).
+
+- 37 patients experience recurrence within this time
+- 10 patients have seminal vessel invasion
+- 3 patients have positive lymph nodes
+- 38 patients have established capsular invasion, 6 focal, 18 invasive and 17 have no capsular invasion
+- Median age is 61.2 years (range: 44.9, 72.7)
+
+-----
+
+**Warning**
+
+P-values can vary considerably if a study is repeated from sampling alone. You may have a statistically significant result but isthe effect size of importance? The p-value can help you answer the yes/no question but the question you often want to ask is the how much question. See Halsey et al., Nat Methods 12(3):179-85, 2015.
+
+-----
+
+**Syntax**
+
+This tool takes a list of gene symbols and matches each to an Affymetrix Human Genome U133a probe ID (AffyID). Recursive partitioning is then carried out to find cut-off(s) in gene expression value such that the resulting groups have a significant difference in survival course.  A recursive partitioning plot and a Kaplan-Meier plot are produced for genes with significant cut-off(s).
+
+- The input should be a single column list of gene symbols.
+- There are two output files: the first is an HTML file containing recursive partitioning and Kaplan-Meier survival curves for significant probes, the second a table summarising cut-offs and p-values for each gene/probe.
+- The cut-offs are cut-offs in gene expression values to define the groups, if there is one cut-off there are two groups and if there are two cut-offs there are three groups. 
+- The p-values are the significance of the differences in survival course between the two groups. 
+
+-----
+
+**Example**
+
+- Input gene list::
+
+	BIRC5
+	INHBB
+	PBK
+	ENTPD2
+	STK6
+
+- Output::
+
+	GeneName	AffyID	CutOff1	CutOff2	PValue1	PValue2	HighIsGood
+	BIRC5	202094_at	NA	NA	0.97	NA	NA
+	BIRC5	202095_s_at	5.49	NA	0.012	NA	FALSE
+	BIRC5	210334_x_at	NA	NA	0.52	NA	NA
+	INHBB	205258_at	NA	NA	0.25	NA	NA
+	PBK	219148_at	NA	NA	0.053	NA	NA
+	ENTPD2	207372_s_at	3.31	NA	0.043	NA	TRUE
+	STK6	204092_s_at	6.88	NA	0.034	NA	FALSE
+	STK6	208079_s_at	NA	NA	0.37	NA	NA
+	STK6	208080_at	NA	NA	0.65	NA 	NA
+
+In this example there was no evidence of a significant split for the first or third probe of BIRC5, for INHBB and PBK, nor for the second or third probe of STK6. This is demonstrated by PValue1, the p-value for the first cut-off being &gt;0.05. All other probes produced significant splits, as demonstrated by PValue1&lt;0.05. Recursive partitioning on most of the probes produced one cut-off to split the cohort into two groups, with significantly different survival courses. The HighIsGood column indicates which group has worse prognosis. For the significant probe of BIRC5, high values of expression of BIRC5 are associated with a poor prognosis, or alternatively low values of expression are associated with a good prognosis. For ENTPD2 the opposite is true. The HighIsGood column displays NA, either where there is no evidence of a significant split, or where there are two significant p-values where the trend across the groups is inconsistent. 
+
+With 80 subjects and only 37 events (deaths/recurrences), the power to detect a difference in survival if one exists is low. Therefore, any genes that show no evidence of being predicted of survival need to be treated with caution. The results could be due to a lack of power rather than a lack of predictive power. 
+     
+.. image:: ./static/images/cri/survival_analysis/BIRC5_RP.png
+
+The plot above is a recursive partitioning plot for the second probe of the BIRC5 gene. The first node demonstrates that there is a significant split with p=0.012. Following the line to the second node, gives the Kaplan-Meier curve for the group with a BIRC5 expression value &lt;=5.489. There are 35 subjects in this group. Following the line to node 3, where BIRC5&gt;5.489 here the Kaplan-Meier curve is shown for the 44 subjects in this group. 
+
+.. image:: ./static/images/cri/survival_analysis/BIRC5_KM.png
+
+The plot above combines the Kaplan-Meier curves from the recursive partitioning plot for easy visualisation. The blue curve is the curve in node 2 and the red one the curve from node 3. As can be seen from the plot, the two survival curves are significantly different to each other. Lower values of BIRC5 are associated with a better recurrence free survival.  
+
+The Kaplan-Meier plot is a useful way of summarising survival data. There is one curve for each group. Each curve starts at 100% probability of recurrence free survival. The probability of recurrence free survival is shown on the y axis and the time to death or recurrence/distant metastasis (in years) is shown on the x axis. The curve drops each time there is an "event". An event would be the first of death or recurrence for recurrence free survival. A cross is shown on each curve where a "censoring" event takes place. This is where someone drops out of the study for a reason not related to the study, e.g. the study ends before an event has occurred. These subjects are no longer included in any calculations. The lower the survival curve the worse prognosis the patients in that group have.
+
+  </help>
+
+</tool>

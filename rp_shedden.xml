@@ -1,0 +1,106 @@
+<tool id="rp_shedden" name="RP-Shedden2008">
+  <description>Recursive partitioning on lung adenocarcinoma expression dataset</description>
+
+  <command interpreter="R --vanilla --slave -f">rp_shedden.R --args ${GALAXY_DATA_INDEX_DIR}/cri/survival_analysis/Shedden3.RData $input $col $output_txt $output_html $output_html.files_path $outcome $signature 2&gt;stderr || cat stderr 1&gt;&amp;2</command>
+
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Source file" help="File containing a list of gene symbols, must be tabular format"/>
+    <param name="col" type="data_column" data_ref="input" numerical="False" label="Column" help="Column containing gene symbols" />
+    <param name="outcome" type="select" label="Outcome" help="Type of survival data used to fit regression model">
+      <option value="rfs" selected="true">Progression/Recurrence free survival</option>
+      <option value="os">Overall survival</option>
+    </param>
+    <param name="signature" type="select" label="KRAS signature status" help="Filter expression data on KRAS signature status">
+      <option value="all" selected="true">All</option>
+      <option value="kras.pos">KRAS-signature-positive</option>
+      <option value="kras.neg">KRAS-signature-negative</option>
+      <option value="kras.indef">KRAS-signature-indefinite</option>
+    </param>
+    </inputs>
+
+  <outputs>
+    <data format="tabular" name="output_txt" />
+    <data format="html" name="output_html" />
+  </outputs>
+
+  <tests>
+    <test>
+        <param name="input" value="survival_genes.tabular" ftype="tabular" />
+        <param name="col" value="2"/>
+        <output name="output_txt" file="rp_shedden.tabular" />
+        <output name="output_html" file="rp_shedden.html" />
+    </test>
+  </tests>
+
+  <help>
+
+.. class:: infomark
+
+Performs recursive partitioning (Hothorn et al., J Comput Graph Stat 15:651-674, 2006) for each individual gene (probe) specified in the input file. Recursive partitioning attempts to find cut-off(s) in gene expression values such that the resulting subgroups have significantly different survival courses.  Using expression data and accompanying survival data taken from Shedden et al., Nat. Med. 14(8):822-827, 2008.
+
+.. class:: infomark
+
+This lung (NSCLC) adenocarcinoma dataset comprises expression profiles for primary tumours from 505 patients
+
+- Overall and progression/recurrence free survival and gene expression data are available for 442 patients.
+- There are 116 KRAS signature positive, 143 KRAS signature negative and 183 KRAS signature indefinites. 
+- There are 236 deaths and 245 progressions/recurrences/deaths.
+- Median patient age is 65 years (range: 33, 87), and 49.5% are female.
+- 7.2% are current smokers, 60.6% ex-smokers and 11.1% non-smokers.
+
+
+-----
+
+**Syntax**
+
+This tool takes a list of gene symbols and matches each to an Affymetrix Human Genome U133A probe ID (AffyID). Recursive partitioning is the carried out to find cut-off(s) in gene expression value such that the resulting groups have a significant difference in survival course.  A recursive partitioning plot and a Kaplan-Meier plot are produced for genes with significant cut-off(s). No clinical variables are included in the analysis.
+
+- The input should be a single column list of gene symbols.
+- A choice is offered as to whether to fit the model to predict the outcome of overall or preogression/recurrence free survival time.
+- There is also the option to choose the subpopulation by selecting KRAS signature positive, negative or indefinite. 
+- There are two output files: the first is an HTML file containing recursive partitioning and Kaplan-Meier survival curves for significant probes, the second a table summarising cut-offs and p-values for each gene/probe.
+- The cut-offs are cut-offs in gene expression values to define the groups, if there is one cut-off there are two groups and if there are two cut-offs there are three groups.
+- The p-values are the significance of the differences in survival course between the two groups.
+
+-----
+
+**Example**
+
+- Input gene list::
+
+	MLH1
+	TRIM31
+
+- Outcome::
+
+	Progression/Recurrence free survival
+
+- KRAS signature status:: 
+
+	KRAS-signature-positive
+
+- Output::
+
+	GeneName	AffyID	CutOff1	Cutoff2	PValue1	PValue2	HighIsGood
+	MLH1	202520_s_at	-0.526	NA	0.029	NA	FALSE
+	TRIM31	208170_s_at	NA	NA	0.62	NA	NA
+	TRIM31	210159_s_at	NA	NA	0.65	NA	NA
+	TRIM31	215444_s_at	NA	NA	0.9	NA	NA
+
+In this example there was no evidence of a significant split for any probe of the TRIM31 gene. This is demonstrated by PValue1, the p-value for the first cut-off being &gt;0.05. The probe for MLH1 produced a significant split, as demonstrated by PValue1 &lt;0.05. Recursive partitioning on the MLH1 probe produced one cut-off to split the cohort into two groups, with significantly different survival courses. The sign of the cut-off indicates whether the value of the cut-off for the expression value is positive or negative. For MLH1 the HighIsGood column is FALSE indicating that a high value of expression for MLH1 is associated with a poor prognosis, or alternatively a low value of expression is associated with a good prognosis. The probes for TRIM31, display NA in this column as there is no evidence of a signficant split. An NA is also displayed, where there are two significant p-values, but the trend of expression is not consistent. 
+
+.. image:: ./static/images/cri/survival_analysis/MLH1_RP.png
+
+The plot above is a recursive partitioning plot for the probe of the MLH1 gene. The first node demonstrates that there is a significant split with p=0.029. Following the line to the second node, gives the Kaplan-Meier curve for the group with an MLH1 expression value &lt;=-0.526. There are 41 subjects in this group. Following the line to node 3, where STK6&gt;-0.526, here the Kaplan-Meier curve is shown for the 102 subjects in this group. 
+
+.. image:: ./static/images/cri/survival_analysis/MLH1_KM.png
+
+The plot above combines the Kaplan-Meier curves from the recursive partitioning plot for easy visualisation. The blue curve is from the first split in the data and corresponds to the curve in node 2. The red curve is the curve in node 3. 
+
+The Kaplan-Meier plot is a useful way of summarising survival data. There is one curve for each group. Each curve starts at 100% probability of progression/recurrence free survival. The probability of progression/recurrence free survival is shown on the y axis and the time to death or progression/recurrence (in months) is shown on the x axis. The curve drops each time there is an "event". An event would be the first of death or progression/recurrence for progression/recurrence free survival. Or death for overall survival. A cross is shown on each curve where a "censoring" event takes place. This is where someone drops out of the study for a reason not related to the study, e.g. the study ends before an event has occurred. These subjects are no longer included in any calculations. The lower the survival curve the worse prognosis the patients in that group have.     
+
+
+
+  </help>
+
+</tool>

@@ -1,0 +1,125 @@
+<tool id="rp_loi" name="RP-Loi2007">
+  <description>Recursive partitioning on Tamoxifen treated breast cancer expression dataset</description>
+
+  <command interpreter="R --vanilla --slave -f">rp_loi.R --args ${GALAXY_DATA_INDEX_DIR}/cri/survival_analysis/LUMINAL.RData $input $col $output_txt $output_html $output_html.files_path $outcome $receptor $treatment 2&gt;stderr || cat stderr 1&gt;&amp;2</command>
+
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Source file" help="File containing a list of gene symbols, must be tabular format"/>
+    <param name="col" type="data_column" data_ref="input" numerical="False" label="Column" help="Column containing gene symbols" />
+    <param name="outcome" type="select" label="Outcome" help="Type of survival data used to fit regression model">
+      <option value="rfs" selected="true">Recurrence free survival</option>
+      <option value="dmfs">Distant metastasis free survival</option>
+    </param>
+    <param name="receptor" type="select" label="ER/PgR receptor status" help="Filter expression data on estrogen receptor and/or progesterone receptor status">
+      <option value="all" selected="true">All</option>
+      <option value="er">ER-positive</option>
+      <option value="pgr">PgR-positive</option>
+      <option value="erpgr">ER- and PgR-positive</option>
+    </param>
+    <param name="treatment" type="select" label="Treatment" help="Filter expression data on treatment">
+      <option value="tamoxifen" selected="true">Tamoxifen</option>
+      <option value="none">None</option>
+    </param>
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output_txt" />
+    <data format="html" name="output_html" />
+  </outputs>
+
+  <tests>
+    <test>
+        <param name="input" value="survival_genes.tabular" ftype="tabular" />
+        <param name="col" value="2"/>
+        <output name="output_txt" file="rp_loi.tabular" />
+        <output name="output_html" file="rp_loi.html" />
+    </test>
+  </tests>
+
+  <help>
+
+.. class:: infomark
+
+Performs recursive partitioning (Hothorn et al., J Comput Graph Stat 15:651-674, 2006) for each individual gene (probe) specified in the input file. Recursive partitioning attempts to find cut-off(s) in gene expression values such that the resulting subgroups have significantly different survival courses.  Using expression data and accompanying survival data taken from Loi et al., J. Clin. Oncol. 25:1239-1246, 2007.
+
+.. class:: infomark
+
+This breast cancer dataset comprises expression profiles for primary tumours from 414 patients of which 277 were treated with Tamoxifen and 137 were untreated.
+
+- Recurrence free survival data are available for 268 and 125 of the treated and untreated patients respectively.
+- Distant metastasis free survival data are available for 250 and 125 of the treated and untreated patients respectively.
+
+- 263 of the treated group are ER-positive, 129 are PgR-positive and 124 are both ER- and PgR-positive.
+- 86 of the untreated group are ER-positive, 56 are PgR-positive and 51 are both ER- and PgR-positive.
+
+
+-----
+
+**Syntax**
+
+This tool takes a list of gene symbols and matches each to an Affymetrix Human Genome U133 Plus 2.0 probe ID (AffyID). Recursive partitioning is the carried out to find cut-off(s) in gene expression value such that the resulting groups have a significant difference in survival course.  A recursive partitioning plot and a Kaplan-Meier plot are produced for genes with significant cut-off(s).
+
+- The input should be a single column list of gene symbols.
+- A choice is offered as to whether to fit the model to predict the outcome of recurrence free survival time or the distant metastasis free survival time.
+- There is also the option to choose the subpopulation by selecting only ER-positive or PgR-positive tumours, or both ER- and PgR-positive. 
+- Another option allows the selection of patients treated with Tamoxifen or left untreated.
+- There are two output files: the first is an HTML file containing recursive partitioning and Kaplan-Meier survival curves for significant probes, the second a table summarising cut-offs and p-values for each gene/probe.
+- The cut-offs are cut-offs in gene expression values to define the groups, if there is one cut-off there are two groups and if there are two cut-offs there are three groups. 
+- The p-values are the significance of the differences in survival course between the two groups. 
+- The HighIsGood column, indicates if a high value of expression is associated with a good prognosis (TRUE) or a poor prognosis (FALSE). 
+
+-----
+
+**Example**
+
+- Input gene list::
+
+	BIRC5
+	INHBB
+	PBK
+	ENTPD2
+	STK6
+
+- Outcome::
+
+	Recurrence free survival
+
+- ER/PgR receptor status:: 
+
+	ER-positive
+
+- Treatment::
+
+	Tamoxifen
+
+- Output::
+
+	GeneName	AffyID	CutOff1	CutOff2	PValue1	PValue2	HighIsGood
+	BIRC5	202094_at	0.00341	NA	0.00095	NA	FALSE
+	BIRC5	202095_s_at	0.379	NA	4.4e-05	NA	FALSE	
+	BIRC5	210334_x_at	-0.156	NA	0.0033	NA	FALSE
+	INHBB	205258_at	-0.223	NA	0.031	NA	TRUE
+	PBK	219148_at	0.164	NA	5e-04	NA	FALSE
+	ENTPD2	207372_s_at	NA	NA	0.8	NA	NA
+	ENTPD2	230430_at	NA	NA	0.65	NA	NA
+	STK6	204092_s_at	0.471	1.335	0.00046	0.018	FALSE
+	STK6	208079_s_at	-0.257	NA	0.00021	NA	FALSE
+	STK6	208080_at	NA	NA	0.12	NA 	NA
+
+In this example there was no evidence of a significant split for either probe for the ENTPD2 gene, nor for the third probe of STK6. This is demonstrated by PValue1, the p-value for the first cut-off being &gt;0.05. All other probes produced significant splits, as demonstrated by PValue1&lt;0.05. Recursive partitioning on most of the probes produced one cut-off to split the cohort into two groups, with significantly different survival courses. The first probe of STK6 produces two cut-offs to split the cohort into three groups. The p-value for the first split is 0.00046 and for the second is 0.018. The sign of the cut-off indicates whether the value of the cut-off for the expression value is positive or negative. To see which group has worse prognosis, the Kaplan-Meier plots need to be studied.  
+
+For all three probes of the BIRC5 gene, a low value expression was associated with a good prognosis, or alternatively high values of expression were associated with a poor prognosis. As there is no evidence of a significant split for both probes of ENTPD2 and the third probe of STK6, this column displays NA. Where there are two significant splits, if the HighIsGood column displays NA, this means that the pattern is not consistent across the three groups.   
+
+.. image:: ./static/images/cri/survival_analysis/STK6_RP.png
+
+The plot above is a recursive partitioning plot for the first probe of the STK6 gene. The first node demonstrates that there is a significant split with p&lt;0.001 (a more exact p-value can be seen on the plot below). Following the line to the second node, gives the Kaplan-Meier curve for the group with an STK6 expression value &lt;=0.471. There are 190 subjects in this group. Following the line to node 3, where STK6&gt;0.471, there is a second split with p=0.018. Following the line to node 4 shows the group with STK6 expression >0.471 &amp; &lt;=1.335, here the Kaplan-Meier curve is shown for the 55 subjects in this group. Node 5, shows the Kaplan-Meier curve for the 18 subjects with an STK6 expression value &gt;1.335.
+
+.. image:: ./static/images/cri/survival_analysis/STK6_KM.png
+
+The plot above combines the Kaplan-Meier curves from the recursive partitioning plot for easy visualisation. The turquoise curve is from the first split in the data and corresponds to the curve in node 2. The blue curve is the curve in node 4 and the red one the curve from node 5. As can be seen from the plot, although the survival courses for both the turquoise and red curves are different to the blue curve, they are not different to each other. This suggests a U-shaped relationship between STK6 expression and recurrence free survival. 
+
+The Kaplan-Meier plot is a useful way of summarising survival data. There is one curve for each group. Each curve starts at 100% probability of recurrence/distant metastasis free survival. The probability of recurrence/distant metastasis free survival is shown on the y axis and the time to death or recurrence/distant metastasis (in years) is shown on the x axis. The curve drops each time there is an "event". An event would be the first of death or recurrence for recurrence free survival. Or the first of death or distant metatasis for distant metastasis free survival. A cross is shown on each curve where a "censoring" event takes place. This is where someone drops out of the study for a reason not related to the study, e.g. the study ends before an event has occurred. These subjects are no longer included in any calculations. The lower the survival curve the worse prognosis the patients in that group have.
+
+  </help>
+
+</tool>

@@ -1,0 +1,136 @@
+<tool id="rp_desmedt" name="RP-Desmedt2007">
+  <description>Recursive partitioning on lymph node negative breast cancer expression dataset</description>
+
+  <command interpreter="R --vanilla --slave -f">rp_des.R --args ${GALAXY_DATA_INDEX_DIR}/cri/survival_analysis/GSE7390_transbig2006affy.RData $input $col $output_txt $output_html $output_html.files_path $outcome $er $age $grade 2&gt;stderr || cat stderr 1&gt;&amp;2</command>
+
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Source file" help="File containing a list of gene symbols, must be tabular format"/>
+    <param name="col" type="data_column" data_ref="input" numerical="False" label="Column" help="Column containing gene symbols" />
+    <param name="outcome" type="select" label="Outcome" help="Type of survival data used to fit regression model">
+      <option value="tdm">Time to distant metastasis</option>
+      <option value="os">Overall survival</option>
+      <option value="rfs" selected="true">Recurrence free survival</option>
+      <option value="dmfs">Distant metastasis free survival</option>
+    </param>
+    <param name="er" type="select" label="ER receptor status" help="Filter expression data on estrogen receptor status">
+      <option value="pos" selected="true">Positive</option>
+      <option value="neg">Negative</option>
+      <option value="all">All</option>
+      </param>
+      <param name="age" type="select" label="Age" help="Filter on patient's age">
+      <option value="all" selected="true">All</option>
+      <option value="lt50">&lt;50 years</option>
+      <option value="50+">50+ years</option>
+      </param>
+      <param name="grade" type="select" label="Grade" help="Filter on patient's grade">
+      <option value="all" selected="true">All</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      </param>
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output_txt" />
+    <data format="html" name="output_html" />
+  </outputs>
+
+  <tests>
+    <test>
+        <param name="input" value="survival_genes.tabular" ftype="tabular" />
+        <param name="col" value="2"/>
+        <output name="output_txt" file="rp_des.tabular" />
+        <output name="output_html" file="rp_des.html" />
+    </test>
+  </tests>
+
+
+  <help>
+
+.. class:: infomark
+
+Performs recursive partitioning (Hothorn et al., J Comput Graph Stat 15:651-674, 2006) for each individual gene (probe) specified in the input file. Recursive partitioning attempts to find cut-off(s) in gene expression values such that the resulting subgroups have significantly different survival courses.  Using expression data and accompanying survival data taken from Desmedt et al., Clin. Can. Res. 13:3207-3214, 2007.
+
+.. class:: infomark
+
+This breast cancer dataset comprises expression profiles for lymph node negative tumours from 198 patients of which 134 were ER positive and 64 were ER negative. 131 patients are aged &lt;50 and 67 aged 50+. 30 patients are grade 1, 83 are grade 2, 83 are grade 3 and 2 are missing grade. Survival data are available for all patients for 4 outcomes: time to distant metastasis, disease free survival, overall survival and distant metastasis free survival.
+
+.. class:: infomark
+
+Other clinical variables not currently available in this tool are also available in the dataset: tumour size, surgery type, histoloy, angio invasion, lymphocytice infiltrate, St Gallen clinical risk group, Nottingham prognostic index (and risk group), Adjuvant online 10 year survival, Adjuvant online clinical risk group, Veridex clinical risk group.
+
+-----
+
+**Warning**
+
+- It is recommended when using this tool to set at least two of ER status, age and grade to all. Otherwise the resulting sample sizes will be too small for meaningful analysis.
+- When the sample size is small there is low power to detect a split in the data. Therefore, when a signficant split is not detected it may be there was insufficient power to detect. Therefore, genes that do not produce a split should be treated cautiously. 
+
+-----
+
+**Syntax**
+
+This tool takes a list of gene symbols and matches each to an Affymetrix Human Genome U133a probe ID (AffyID). Recursive partitioning is the carried out to find cut-off(s) in gene expression value such that the resulting groups have a significant difference in survival course.  A recursive partitioning plot and a Kaplan-Meier plot are produced for genes with significant cut-off(s).
+
+- The input should be a single column list of gene symbols.
+- A choice is offered as to whether to fit the model to predict the outcome of time to distant metastasis, disease free survival, overall survival and distant metastasis free survival.
+- There is also the option to choose the subpopulation by selecting ER positive (n=134) or ER negative (n=64). 
+- There are two output files: the first is an HTML file containing recursive partitioning and Kaplan-Meier survival curves for significant probes, the second a table summarising cut-offs and p-values for each gene/probe.
+- The cut-offs are cut-offs in gene expression values to define the groups, if there is one cut-off there are two groups and if there are two cut-offs there are three groups. 
+- The p-values are the significance of the differences in survival course between the two groups. 
+
+-----
+
+**Example**
+
+- Input gene list::
+
+	BIRC5
+	INHBB
+	PBK
+	ENTPD2
+	STK6
+
+- Outcome::
+
+	Recurrence free survival
+
+- ER receptor status:: 
+
+	Positive
+
+- Age:: 
+
+	All
+
+- Grade:: 
+
+	All
+
+
+- Output::
+
+	GeneName	AffyID	CutOff1	CutOff2	PValue1	PValue2	HighIsGood
+	BIRC5	202094_at	8.17	NA	0.035	NA	FALSE
+	BIRC5	202095_s_at	8.66	NA	0.0013	NA	FALSE
+	BIRC5	210334_x_at	8.11	NA	0.00088	NA	FALSE
+	INHBB	205258_at	NA	NA	0.9	NA	NA
+	STK6	204092_s_at	8.94	NA	0.0031	NA	FALSE
+	STK6	208079_s_at	9.27	NA	0.0095	NA	FALSE
+	STK6	208080_at	NA	NA	0.34	NA 	NA
+
+In this example there was no evidence of a significant split for either probe for the INHBB gene, nor for the third probe of STK6. This is demonstrated by PValue1, the p-value for the first cut-off being &gt;0.05. All other probes produced significant splits, as demonstrated by PValue1&lt;0.05. Recursive partitioning on the probes produced one cut-off to split the cohort into two groups, with significantly different survival courses. The sign of the cut-off indicates whether the value of the cut-off for the expression value is positive or negative. To see which group has worse prognosis, the Kaplan-Meier plots need to be studied or the HighIsGood column can be used. If this column is TRUE then high values of expression lead to good prognosis, if this is FALSE high value of expression lead to poor prognosis.     
+
+.. image:: ./static/images/cri/survival_analysis/BIRC5_rp_des.png
+
+The plot above is a recursive partitioning plot for the first probe of the BIRC5 gene. The first node demonstrates that there is a significant split with p=0.035 (this maybe a rounded version of the p-value shown in the Kaplan-Meier plot). Following the line to the second node, gives the Kaplan-Meier curve for the group with an BIRC5 expression value &lt;=8.171. There are 102 subjects in this group and a Kaplan-Meier plot is shown for this. Following the line to node 3, where BIRC5&gt;= 8.171, a Kaplan-Meier plot is shown for the32 subjects in this group. 
+
+.. image:: ./static/images/cri/survival_analysis/BIRC5_km_des.png
+
+The plot above combines the Kaplan-Meier curves from the recursive partitioning plot for easy visualisation. The red curve is the plot from node3 and the blue curve the plot from node 2. 
+
+The Kaplan-Meier plot is a useful way of summarising survival data. There is one curve for each group. Each curve starts at 100% probability of survival. The probability of  survival is shown on the y axis and the time (in years) is shown on the x axis. The curve drops each time there is an "event". An event varies with the choden outcome.A cross is shown on each curve where a "censoring" event takes place. This is where someone drops out of the study for a reason not related to the study, e.g. the study ends before an event has occurred. These subjects are no longer included in any calculations. The lower the survival curve the worse prognosis the patients in that group have.
+
+  </help>
+
+</tool>

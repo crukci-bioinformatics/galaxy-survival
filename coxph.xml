@@ -1,0 +1,61 @@
+<tool id="coxph" name="CoxPH Regression">
+  <description>CoxPH Regression</description>
+
+  <command interpreter="R --vanilla --slave -f">
+    #if $dataset.name == "loi":
+      coxph_loi.R --args ${GALAXY_DATA_INDEX_DIR}/cri/survival_analysis/LUMINAL.RData $input $col $output $dataset.outcome $dataset.receptor $dataset.treatment 2&gt;stderr || cat stderr 1&gt;&amp;2
+    #else if $dataset.name == "shedden":
+      coxph_shedden.R --args ${GALAXY_DATA_INDEX_DIR}/cri/survival_analysis/Shedden3.RData $input $col $output $dataset.outcome $dataset.signature 2&gt;stderr || cat stderr 1&gt;&amp;2
+    #end if
+  </command>
+
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Source file" help="File containing a list of gene symbols, must be tabular format"/>
+    <param name="col" type="data_column" data_ref="input" numerical="False" label="Column" help="Column containing gene symbols" />
+
+    <conditional name="dataset">
+      <param name="name" type="select" label="Dataset">
+        <option value="loi" selected="true">Loi Breast Cancer 2007</option>
+        <option value="shedden">Shedden Lung Cancer 2008</option>
+      </param>
+      
+      <when value="loi">
+        <param name="outcome" type="select" label="Outcome" help="Type of survival data outcome used to fit Cox regression model">
+          <option value="rfs" selected="true">Recurrence free survival</option>
+          <option value="dmfs">Distant metastasis free survival</option>
+        </param>
+        <param name="receptor" type="select" label="ER/PgR receptor status" help="Filter expression data on estrogen receptor and/or progesterone receptor status">
+          <option value="all" selected="true">All</option>
+          <option value="er">ER-positive</option>
+          <option value="pgr">PgR-positive</option>
+          <option value="erpgr">ER- and PgR-positive</option>
+        </param>
+        <param name="treatment" type="select" label="Treatment" help="Filter expression data on treatment">
+          <option value="tamoxifen" selected="true">Tamoxifen</option>
+          <option value="none">None</option>
+        </param>
+      </when>
+      
+      <when value="shedden">
+        <param name="outcome" type="select" label="Outcome" help="Type of survival data used to fit regression model">
+          <option value="rfs" selected="true">Progression/Recurrence free survival</option>
+          <option value="os">Overall survival</option>
+        </param>
+        <param name="signature" type="select" label="KRAS signature status" help="Filter expression data on KRAS signature status">
+          <option value="all" selected="true">All</option>
+          <option value="kras.pos">KRAS-signature-positive</option>
+          <option value="kras.neg">KRAS-signature-negative</option>
+          <option value="kras.indef">KRAS-signature-indefinite</option>
+        </param>    
+      </when>
+    </conditional>
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output" />
+  </outputs>
+
+  <help>
+  </help>
+
+</tool>

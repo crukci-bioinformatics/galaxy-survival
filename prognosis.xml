@@ -1,0 +1,72 @@
+<tool id="prog" name="Prognosis">
+  <description>Summarises prognosis by gene from recursive partitioning</description>
+
+  <command interpreter="R --vanilla --slave -f">
+    #if $dataset.name == "loi":
+      prog_loi.R --args $input $output 2&gt;stderr || cat stderr 1&gt;&amp;2
+    #end if
+  </command>
+
+  <inputs>
+    <param name="input" type="data" format="tabular,txt" label="Source file" help="File containing output of recursive partitioning on Loi et al dataset"/>
+    
+    <conditional name="dataset">
+      <param name="name" type="select" label="Dataset">
+        <option value="loi" selected="true">Loi Breast Cancer 2007</option>
+      </param>
+      <when value="loi">
+      </when>
+    </conditional>
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output" />
+  </outputs>
+
+  <help>
+
+.. class:: infomark
+
+The final column of the output of RP-Loi2007 if there is a significant split, states whether higher values of expression for that probe are associated with good (if column is TRUE) prognosis, or poor (if column is FALSE) prognosis. If the column is NA then there was no significant split. 
+
+.. class:: infomark
+
+For each gene there may be more than one probe, this tool summarises the results of each gene. It outputs whether all probes for the gene were associated with good prognosis, poor prognosis or both good and poor prognosis, for just the first split if there was more than one split. 
+
+-----
+
+**Syntax**
+
+This tool takes the output of the tool RP-Loi2007 and summarises across probes the prognosis per gene.
+
+-----
+
+**Example**
+
+- Input::
+
+	GeneName	AffyID	CutOff1	CutOff2	PValue1	PValue2	HighIsGood
+	BIRC5	202094_at	0.00341	NA	0.00095	NA	FALSE
+	BIRC5	202095_s_at	0.379	NA	4.4e-05	NA	FALSE
+	BIRC5	210334_x_at	-0.156	NA	0.0033	NA	FALSE
+	INHBB	205258_at	-0.223	NA	0.031	NA	TRUE
+	PBK	219148_at	0.164	NA	5e-04	NA	FALSE
+	ENTPD2	207372_s_at	NA	NA	0.8	NA	NA
+	ENTPD2	230430_at	NA	NA	0.65	NA	NA
+	STK6	204092_s_at	0.471	1.335	0.00046	0.018	FALSE
+	STK6	208079_s_at	-0.257	NA	0.00021	NA	FALSE
+	STK6	208080_at	NA	NA	0.12	NA 	NA
+
+- Output::
+
+	GeneName  Prognosis 
+	BIRC5	  Poor
+	INHBB	  Good
+	PBK	  Poor
+	STK6	  Poor
+
+In this example higher values of expression for BIRC5, PBK and STK were associated with poorer prognosis based on the first split. Higher values of expression of INHBB were associated with a better prognosis. ENTPD2 showed no evidence of being associated with prognosis. 
+
+  </help>
+
+</tool>

@@ -1,0 +1,244 @@
+<tool id="rp" name="RP">
+  <description>Recursive partitioning</description>
+  
+  <command interpreter="sh">     
+    #silent sys.stderr.write("!!!! Cheetah Template Variables !!!!\n")
+    #for k,v in $searchList[2].items()
+    #silent   sys.stderr.write(" %s = %s\n" % (str(k), str(v) ))
+    #end for
+    
+    ## path to the dataset selected extracted from the 'cri_datasets' data table (tool-data/cri/datasets.loc)
+    #import os
+    #set $dataset_relative_path = filter( lambda x: str( x[0] ) == str( $dataset.name.value ), $__app__.tool_data_tables[ 'cri_datasets' ].get_fields() )[0][-1]
+    #set $dataset_path = os.path.join($__tool_data_path__, $dataset_relative_path)
+  
+  r_wrapper.sh 
+    rp.R 
+    $dataset.name.value 
+    $dataset_path
+    $input 
+    $column 
+    $output_txt  
+    $output_html 
+    $output_html.files_path
+    
+    ## optional arguments set to none when not relevant to a particular dataset
+    #if not $varExists('$dataset.name.outcome')
+      none
+    #else
+      $dataset.name.outcome
+    #end if
+    
+    #if not $varExists('$dataset.name.receptor')
+      none
+    #else
+      $dataset.name.receptor
+    #end if
+    
+    #if not $varExists('$dataset.name.treatment')
+      none
+    #else
+      $dataset.name.treatment
+    #end if 
+    
+    #if not $varExists('$dataset.name.er') 
+      none 
+    #else
+      $dataset.name.er
+    #end if
+    
+    #if not $varExists('$dataset.name.age')
+      none
+    #else
+      $dataset.name.age
+    #end if
+    
+    #if not $varExists('$dataset.name.grade')
+      none
+    #else
+      $dataset.name.grade
+    #end if 
+    
+    #if not $varExists('$dataset.name.signature')
+      none
+    #else
+      $dataset.name.signature
+    #end if 
+    
+    #if not $varExists('$dataset.name.margins')
+      none
+    #else
+      $dataset.name.margins
+    #end if 
+    
+    #if not $varExists('$dataset.name.groups')
+      none
+    #else
+      $dataset.name.groups
+    #end if
+    
+    #if not $varExists('$dataset.name.gleason')
+      none
+    #else
+      $dataset.name.gleason
+    #end if 
+    
+    #if not $varExists('$dataset.name.tstage')
+      none
+    #else
+      $dataset.name.tstage
+    #end if
+    
+  </command>  
+  
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Source file" help="File containing a list of gene symbols, must be tabular format"/>
+    <param name="column" type="data_column" data_ref="input" numerical="False" label="Column" help="Column containing gene symbols" />
+    <conditional name="dataset">
+      <param name="type" type="select" label="Dataset type">
+        <options from_data_table="cri_datasets">
+          <column name="name" index="3"/>
+          <column name="value" index="2"/>
+          <filter type="unique_value" column="2" />
+        </options>
+      </param>
+      
+      <when value="breast">
+        <conditional name="name">
+          <param name="value" type="select" label="Dataset name">
+            <options from_data_table="cri_datasets">
+              <column name="name" index="1"/>
+              <column name="value" index="0"/>
+              <filter type="static_value" value="breast" column="2" />
+              <filter type="multiple_splitter" column="4" separator="," />
+              <filter type="static_value" value="rp" column="4" />
+            </options>
+          </param>
+          
+          <when value="loi">
+            <param name="outcome" type="select" label="Outcome" help="Type of survival data used to fit regression model">
+              <option value="rfs" selected="true">Recurrence free survival</option>
+              <option value="dmfs">Distant metastasis free survival</option>
+            </param>
+            <param name="receptor" type="select" label="ER/PgR receptor status" help="Filter expression data on estrogen receptor and/or progesterone receptor status">
+              <option value="all" selected="true">All</option>
+              <option value="er">ER-positive</option>
+              <option value="pgr">PgR-positive</option>
+              <option value="erpgr">ER- and PgR-positive</option>
+            </param>
+            <param name="treatment" type="select" label="Treatment" help="Filter expression data on treatment">
+              <option value="tamoxifen" selected="true">Tamoxifen</option>
+              <option value="none">None</option>
+            </param>
+          </when>
+          
+          <when value="desmedt">
+            <param name="outcome" type="select" label="Outcome" help="Type of survival data used to fit regression model">
+              <option value="tdm">Time to distant metastasis</option>
+              <option value="os">Overall survival</option>
+              <option value="rfs" selected="true">Recurrence free survival</option>
+              <option value="dmfs">Distant metastasis free survival</option>
+            </param>
+            <param name="er" type="select" label="ER receptor status" help="Filter expression data on estrogen receptor status">
+              <option value="pos" selected="true">Positive</option>
+              <option value="neg">Negative</option>
+              <option value="all">All</option>
+            </param>
+            <param name="age" type="select" label="Age" help="Filter on patient's age">
+              <option value="all" selected="true">All</option>
+              <option value="lt50">&lt;50 years</option>
+              <option value="50+">50+ years</option>
+            </param>
+            <param name="grade" type="select" label="Grade" help="Filter on patient's grade">
+              <option value="all" selected="true">All</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+            </param>
+          </when>
+          
+        </conditional>
+      </when>
+      
+      <when value="prostate">
+        <conditional name="name">
+          <param name="name_selected" type="select" label="Dataset name">
+            <options from_data_table="cri_datasets">
+              <column name="name" index="1"/>
+              <column name="value" index="0"/>
+              <filter type="static_value" value="prostate" column="2" />
+              <filter type="multiple_splitter" column="4" separator="," />
+              <filter type="static_value" value="rp" column="4" />
+            </options>
+          </param>
+          
+          <when value="glinsky" />
+          
+          <when value="taylor">
+            <param name="margins" type="select" label="Surgical margin status" help="Filter expression data on surgical margin status">
+              <option value="negative" selected="true">Negative</option>
+              <option value="positive">Positive</option>
+              <option value="all">All</option>
+            </param>
+            <param name="groups" type="select" label="Groups" help="Filter on group either Primary or Primary + metastatic (all)">
+              <option value="primary" selected="true">Primary</option>
+              <option value="all">All</option>
+              <option value="metastasis">Metastasis</option>
+            </param>
+            <param name="gleason" type="select" label="Gleason Grade" help="Filter on Gleason grade, 5-6 (low), 7-9 (high) or 5-9 (all)">
+              <option value="all" selected="true">All</option>
+              <option value="low">Low</option>
+              <option value="high">High</option>
+            </param>
+            <param name="tstage" type="select" label="Pathological T stage" help="Filter on pathological t-stage, T2, T3/T4 or all">
+              <option value="all" selected="true">All</option>
+              <option value="two">T2</option>
+              <option value="threefour">T3/T4</option>
+            </param>
+          </when>
+          
+        </conditional>
+      </when>
+      
+      <when value="lung">
+        <conditional name="name">
+          <param name="name_selected" type="select" label="Dataset name">
+            <options from_data_table="cri_datasets">
+              <column name="name" index="1"/>
+              <column name="value" index="0"/>
+              <filter type="static_value" value="lung" column="2" />
+              <filter type="multiple_splitter" column="4" separator="," />
+              <filter type="static_value" value="rp" column="4" />
+            </options>
+          </param>
+          
+          <when value="shedden">
+            <param name="outcome" type="select" label="Outcome" help="Type of survival data used to fit regression model">
+              <option value="rfs" selected="true">Progression/Recurrence free survival</option>
+              <option value="os">Overall survival</option>
+            </param>
+            <param name="signature" type="select" label="KRAS signature status" help="Filter expression data on KRAS signature status">
+              <option value="all" selected="true">All</option>
+              <option value="kras.pos">KRAS-signature-positive</option>
+              <option value="kras.neg">KRAS-signature-negative</option>
+              <option value="kras.indef">KRAS-signature-indefinite</option>
+            </param>
+          </when>
+          
+        </conditional>
+      </when>
+      
+    </conditional>
+      
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output_txt" />
+    <data format="html" name="output_html" />
+  </outputs>
+
+  <help>
+
+  </help>
+
+</tool>

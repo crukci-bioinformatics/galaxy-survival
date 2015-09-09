@@ -1,0 +1,97 @@
+<tool id="coxph_shedden" name="CoxPH-Shedden2008">
+  <description>Gene expression based Cox regression survival predictions in a lung adenocarcinoma dataset</description>
+  <command interpreter="R --vanilla --slave -f">coxph_shedden.R --args ${GALAXY_DATA_INDEX_DIR}/cri/survival_analysis/Shedden3.RData $input $col $output $outcome $signature 2&gt;stderr || cat stderr 1&gt;&amp;2</command>
+
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Source file" help="File containing a list of gene symbols, must be tabular format"/>
+    <param name="col" type="data_column" data_ref="input" numerical="False" label="Column" help="Column containing gene symbols" />
+    <param name="outcome" type="select" label="Outcome" help="Type of survival data used to fit regression model">
+      <option value="rfs" selected="true">Progression/Recurrence free survival</option>
+      <option value="os">Overall survival</option>
+    </param>
+    <param name="signature" type="select" label="KRAS signature status" help="Filter expression data on KRAS signature status">
+      <option value="all" selected="true">All</option>
+      <option value="kras.pos">KRAS-signature-positive</option>
+      <option value="kras.neg">KRAS-signature-negative</option>
+      <option value="kras.indef">KRAS-signature-indefinite</option>
+    </param>
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output" />
+  </outputs>
+
+  <tests>
+    <test>
+        <param name="input" value="survival_genes.tabular" ftype="tabular" />
+        <param name="col" value="2"/>
+        <output name="output" file="coxph_shedden.tabular" />
+    </test>
+  </tests>
+
+  <help>
+
+.. class:: infomark
+
+Fits a univariable Cox proportional hazards regression model on individual genes (probes) from the input list to see which genes (probes) are predictive of either overall or progression/recurrence free survival (as selected). The gene expression values are taken from Shedden et al., Nat. Med. 14(8):822-827, 2008 and are entered into the model as continuous variables. There is no adjustment for clinically relevant covariates. 
+
+.. class:: infomark
+
+This lung (NSCLC) adenocarcinoma dataset comprises expression profiles for primary tumours from 505 patients
+
+- Overall and progression/recurrence free survival and gene expression data are available for 442 patients.
+- There are 116 KRAS signature positive, 143 KRAS signature negative and 183 KRAS signature indefinites. 
+- There are 236 deaths and 245 progressions/recurrences/deaths.
+- Median patient age is 65 years (range: 33, 87), and 49.5% are female.
+- 7.2% are current smokers, 60.6% ex-smokers and 11.1% non-smokers.
+
+-----
+
+**Syntax**
+
+This tool takes a list of gene symbols and matches each to an Affymetrix Human Genome U133A probe ID (AffyID). A univariable Cox proportional hazards regression model is fitted for each probe and the output is the hazard ratio (HR), 95% confidence interval for the hazard ratio (LB, UB) and p-value (PValue) for each.
+
+- The input should be a single column list of gene symbols.
+- A choice is offered as to whether to fit the model to predict the outcome of progression/recurrence free survival time or the overall survival time.
+- There is also the option to choose the subpopulation by selecting KRAS signature positive, negative or indefinite. 
+- The output is in tabular form and may contain multiple rows for each gene where there are multiple Affymetrix probes for that gene.
+- Where the output gives NA for AffyID then there was no probe for that gene.
+- Where the output gives NA for the HR/PValue, there was no gene expression for this probe within the dataset.
+- The hazard ratio is the increase in the hazard of death for each unit increase in gene expression value.
+- A hazard ratio of 1, means there is no increase in hazard of death for each unit increase in gene expression.
+- A hazard ratio of greater than 1, means that the hazard of death increases with increasing gene expression value.
+- A hazard ratio of less than 1, means that the hazard of death decreases with increasing gene expression value.
+- The confidence interval (LB=lower bound, UB=upper bound) gives the range of values of the HR that are consistent with the data.
+- The p-value is the probability of seeing a hazard ratio at least as extreme as the one observed given the data.
+
+-----
+
+**Example**
+
+- Input gene list::
+
+	MLH1
+	TRIM31
+
+- Outcome::
+
+	Progression/Recurrence free survival
+
+- KRAS signature status:: 
+
+	KRAS-signature-positive
+
+- Output::
+
+	GeneName	AffyID	HR	LB	UB	PValue
+	MLH1	202520_s_at	1.27	1.02	1.58	0.034
+	TRIM31	208170_s_at	0.94	0.71	1.25	0.67
+	TRIM31	210159_s_at	0.94	0.71	1.25	0.69
+	TRIM31	215444_s_at	0.98	0.73	1.33	0.91
+
+In this example there is one probe found for MLH1 in the dataset and three probes found for TRIM31. The three probes for TRIM31 show no evidence of an effect on survival (as p&gt;0.05). The probe for MLH1 shows a significant effect (as p&lt;0.05). The hazard ratio for MLH1 is 1.27 (95% confidence interval: 1.02, 1.58).  This means for each unit increase in MLH1 expression there is a 27% increase in risk of progression/recurrence/death. The 95% confidence interval suggests that an increase in risk of between 2% and 58% per unit increase in MLH1 expression are also consistent with the data. 
+
+
+  </help>
+
+</tool>
